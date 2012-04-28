@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace Numerik
 {
@@ -244,10 +245,120 @@ namespace Numerik
         //Ax = b
         //A = reguläre, quadratische Matrix
         //b = Ergebnisvektor
-        //x = Wird duch die LU-Zerteilung zurückgegeben
-        public Matrix LUPartition(Matrix resultVector, bool useRowPivotStrategy)
+        //x = Wird duch die LU-Zerteilung zurückgegeben Ly = b; Ux = y
+        //U = Dreicksmatrix
+        //KeyValuePair 0 --> L, 1 --> U, 2--> y, 3 --> x
+        public Dictionary<string, Matrix> LUPartition(
+            Matrix resultVector,
+            bool useRowPivotStrategy)
         {
-            throw new Exception();
+            if (!resultVector.IsAVector())
+            {
+                throw new Exception("Der Ergebnisvektor hat nicht die Dimensionen eines Vektors!");
+            }
+
+            if (!IsMatrixQuadratic())
+            {
+                throw new Exception("Für die LU-Zerteilung muss die Matrix quadratisch sein!");
+            }
+
+            if (MaxColumnCount != resultVector.MaxRowCount)
+            {
+                throw new Exception("Die Matrix und der Vektor müssen die selbe Zeilenanzahl haben!");
+            }
+
+            var matrices = new Dictionary<string, Matrix>();
+
+            Matrix tempMatrix = CloneMatrix();
+            
+            Matrix matrixL = GetIdentityMatrix();
+
+            for (int column = 0; column < m_MaxColumnCount - 1; column++)
+            {
+                if (useRowPivotStrategy)
+                {
+                    tempMatrix = tempMatrix.RowPivotStrategy(resultVector, column, m_MaxRowCount, column);
+                }
+
+                for (int row = column + 1; row < m_MaxRowCount; row++)
+                {
+                    Matrix firstRowOfMatrix = tempMatrix.GetRowFromMatrixAsMatrix(column);
+                    Matrix secondRowOfMatrix = tempMatrix.GetRowFromMatrixAsMatrix(row);
+
+                    double valueOfFirstCellInRow = Mantissen.RoundToMaxMantissaLength(MantissaLength, tempMatrix.GetDoubleFromMatrix(column, column));
+                    double valueOfSecondCellInRow = Mantissen.RoundToMaxMantissaLength(MantissaLength, tempMatrix.GetDoubleFromMatrix(column, row));
+
+                    double unknownValueToGetZero = Mantissen.RoundToMaxMantissaLength(MantissaLength, -(valueOfSecondCellInRow/valueOfFirstCellInRow));
+
+                    firstRowOfMatrix = firstRowOfMatrix.MultiplyByScalar(unknownValueToGetZero);
+
+                    matrixL.SetDoubleOfMatrix(-unknownValueToGetZero, column, row);
+
+                    double[] resultingRowAdding = firstRowOfMatrix.Add(secondRowOfMatrix).GetRowFromMatrixAsArray(0);
+
+                    tempMatrix = tempMatrix.SetRowFromMatrix(resultingRowAdding, row);
+                }
+            }
+
+            Matrix matrixU = tempMatrix;
+
+            Matrix vectory = matrixL.SolveLowerTriangularMatrix(resultVector);
+            Matrix vectorx = tempMatrix.SolveUpperTriangularMatrix(vectory);
+
+            matrices["L"] = matrixL;
+            matrices["U"] = matrixU;
+            matrices["y"] = vectory;
+            matrices["x"] = vectorx;
+
+            return matrices;
+        }
+
+        public Matrix SolveUpperTriangularMatrix(Matrix resultVector)
+        {
+            var resultMatrix = new Matrix(1, resultVector.m_MaxRowCount);
+
+            int rowCounter = 0;
+
+            for (int row = (m_MaxRowCount - 1); row > -1; row--)
+            {
+                double valueOfCurrentresultVectorCell = Mantissen.RoundToMaxMantissaLength(MantissaLength, resultVector.GetDoubleFromMatrix(0, row));
+                double sumOfCurrentMatrixRow = 0;
+
+                double quotientToDivideSum = GetDoubleFromMatrix(row, m_MaxColumnCount - 1 - rowCounter);
+
+                for (int column = (m_MaxColumnCount - 1); column > (m_MaxColumnCount - 1 - rowCounter); column--)
+                {
+                    double valueOfCurrentCellOfMatrix = Mantissen.RoundToMaxMantissaLength(MantissaLength, GetDoubleFromMatrix(column, row));
+                    double valueOfVariableCorrespondingToCell = Mantissen.RoundToMaxMantissaLength(MantissaLength, resultMatrix.GetDoubleFromMatrix(0, column));
+                    double productOfCellAndVariable = Mantissen.RoundToMaxMantissaLength(MantissaLength, valueOfCurrentCellOfMatrix * valueOfVariableCorrespondingToCell);
+
+                    sumOfCurrentMatrixRow = Mantissen.RoundToMaxMantissaLength(MantissaLength, sumOfCurrentMatrixRow + productOfCellAndVariable);
+                }
+
+                valueOfCurrentresultVectorCell = Mantissen.RoundToMaxMantissaLength(MantissaLength,
+                                                                                    valueOfCurrentresultVectorCell -
+                                                                                    sumOfCurrentMatrixRow);
+
+                //Saving one Result of the Equation
+                double resultOfOneVariable = Mantissen.RoundToMaxMantissaLength(MantissaLength,
+                                                                                valueOfCurrentresultVectorCell /
+                                                                                quotientToDivideSum);
+
+                resultMatrix.SetDoubleOfMatrix(resultOfOneVariable, 0, row);
+
+                rowCounter++;
+            }
+
+            return resultMatrix;
+        }
+
+        public Matrix SolveLowerTriangularMatrix(Matrix resultVector)
+        {
+            Matrix tempResultVector = resultVector.TurningUpSideDown();
+            Matrix tempMatrix = MirrorMatrixOnDiagonal();
+
+            Matrix resultMatrix = tempMatrix.SolveUpperTriangularMatrix(tempResultVector);
+            return resultMatrix.TurningUpSideDown();
         }
 
         //public Matrix Transponierend
@@ -269,7 +380,7 @@ namespace Numerik
             return m_MaxColumnCount == matrixToCompare.MaxColumnCount && m_MaxRowCount == matrixToCompare.MaxRowCount;
         }
 
-        public bool IsAVector(Matrix matrix)
+        public bool IsAVector()
         {
             return m_MaxColumnCount == 1;
         }
@@ -323,6 +434,19 @@ namespace Numerik
             return new Matrix(ToArray());
         }
 
+        protected Matrix GetRowFromMatrixAsMatrix(int rowNumber)
+        {
+            var matrixRowArray = new double[m_MaxColumnCount, 1];
+            double[] tempArray = GetRowFromMatrixAsArray(rowNumber);
+
+            for(int cell = 0; cell < m_MaxColumnCount; cell++)
+            {
+                matrixRowArray[cell, 0] = tempArray[cell];
+            }
+
+            return new Matrix(matrixRowArray);
+        }
+
         protected double[] GetRowFromMatrixAsArray(int rowNumber)
         {
             var rowFromMatrix = new double[m_MaxColumnCount];
@@ -350,9 +474,9 @@ namespace Numerik
         /* Returns Copy Of Matrix, Where Row was set */
         protected Matrix SetRowFromMatrix(double[] rowArray, int rowNumber)
         {
-            if (m_MaxRowCount != rowArray.Length)
+            if (m_MaxColumnCount != rowArray.Length)
             {
-                throw new Exception("Die Reihenanzahl der Matrix und die Länge des Arrays müssen gleich sein!");
+                throw new Exception("Die Spaltenanzahl der Matrix und die Länge des Arrays müssen gleich sein!");
             }
             
             Matrix clonedMatrix = CloneMatrix();
@@ -368,9 +492,9 @@ namespace Numerik
         /* Returns Copy Of Matrix, Where Column was set */
         protected Matrix SetColumnFromMatrix(double[] columnArray, int columnNumber)
         {
-            if (m_MaxColumnCount != columnArray.Length)
+            if (m_MaxRowCount != columnArray.Length)
             {
-                throw new Exception("Die Splatenanzahl der Matrix und die Länge des Arrays müssen gleich sein!");
+                throw new Exception("Die Reihenanzahl der Matrix und die Länge des Arrays müssen gleich sein!");
             }
 
             Matrix clonedMatrix = CloneMatrix();
@@ -383,13 +507,48 @@ namespace Numerik
             return clonedMatrix;
         }
 
-        /* Wendet die Zeilenpivotstrategy innerhalb einer bestimmten Zeilengrenze an für eine bestimmte Spalte*/
-        private Matrix RowPivotStrategy(int minRow, int maxRow, int columnToLookAt)
+        private Matrix TurningUpSideDown()
+        {
+            Matrix tempMatrix = CloneMatrix();
+
+            for (int row = 0; row < (m_MaxRowCount / 2); row++)
+            {
+                tempMatrix = SwapRows(row, m_MaxRowCount - 1 - row);
+            }
+
+            return tempMatrix;
+        }
+
+        private Matrix ReverseLeftToRight()
+        {
+            Matrix tempMatrix = CloneMatrix();
+
+            for (int column = 0; column < (m_MaxColumnCount / 2); column++)
+            {
+                tempMatrix = SwapColumns(column, m_MaxColumnCount - 1 - column);
+            }
+
+            return tempMatrix;
+        }
+
+        // Stellt die Matrix auf dem Kopf
+        private Matrix MirrorMatrixOnDiagonal()
+        {
+            Matrix tempMatrix = CloneMatrix();
+
+            tempMatrix = tempMatrix.TurningUpSideDown();
+            tempMatrix = tempMatrix.ReverseLeftToRight();
+
+            return tempMatrix;
+        }
+
+        /* Wendet die Zeilenpivotstrategie innerhalb einer bestimmten Zeilengrenze an für eine bestimmte Spalte*/
+        private Matrix RowPivotStrategy(Matrix resultVector, int minRow, int maxRow, int columnToLookAt)
         {
             double maxValue = GetDoubleFromMatrix(columnToLookAt, minRow);
             int rowNumber = minRow;
 
-            for (int row = minRow; row < (maxRow + 1); row++)
+            for (int row = minRow; row < maxRow; row++)
             {
                 double tempValue = GetDoubleFromMatrix(columnToLookAt, row);
                 
@@ -400,8 +559,17 @@ namespace Numerik
                 }
             }
 
+            //swapping rows of result vector
+            double firstCellOfVector = resultVector.GetDoubleFromMatrix(0, rowNumber);
+            double secondCellOfVector = resultVector.GetDoubleFromMatrix(0, minRow);
+
+            resultVector.SetDoubleOfMatrix(secondCellOfVector, 0, rowNumber);
+            resultVector.SetDoubleOfMatrix(firstCellOfVector, 0, minRow);
+
             return SwapRows(minRow, rowNumber);
         }
+
+
 
         private void ValidateColumnAndRowNumber(int columnNumber, int rowNumber)
         {

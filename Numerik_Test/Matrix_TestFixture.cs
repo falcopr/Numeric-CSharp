@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 using Numerik;
 
@@ -13,6 +14,8 @@ namespace Matrix_TestFixture
         [TestFixtureSetUp]
         public void TestFixtureTearUp()
         {
+            Mantissen.Active = true;
+
             PrepareContext();
             CallMethodToTest();
         }
@@ -780,8 +783,13 @@ namespace Matrix_TestFixture
     }
 
     [TestFixture]
-    public class LUPartition_WithMantissaFive_TestFixture : Matrix_TestFixtureBase
+    public class LUPartition_WithMantissaFiveWithoutPivotStrategy_TestFixture : Matrix_TestFixtureBase
     {
+        protected Matrix MatrixL { get; set; }
+        protected Matrix MatrixU { get; set; }
+        protected Matrix Vectory { get; set; }
+        protected Matrix Vectorx { get; set; }
+
         protected Matrix RegularQuadraticMatrix { get; set; }
         protected Matrix ResultVector { get; set; }
 
@@ -813,8 +821,57 @@ namespace Matrix_TestFixture
         }
 
         [Test]
-        public void Should_Get_The_Correct_Results_For_x()
+        public void Should_Get_The_Correct_Results_For_MatrixU()
         {
+            Assert.AreEqual(2.1d, MatrixU.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(0d, MatrixU.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(0d, MatrixU.GetDoubleFromMatrix(0, 2));
+
+            Assert.AreEqual(2512d, MatrixU.GetDoubleFromMatrix(1, 0));
+            Assert.AreEqual(1563.9d, MatrixU.GetDoubleFromMatrix(1, 1));
+            Assert.AreEqual(0d, MatrixU.GetDoubleFromMatrix(1, 2));
+
+            Assert.AreEqual(-2516d, MatrixU.GetDoubleFromMatrix(2, 0));
+            Assert.AreEqual(-1565.1d, MatrixU.GetDoubleFromMatrix(2, 1));
+            Assert.AreEqual(-0.7d, MatrixU.GetDoubleFromMatrix(2, 2));
+        }
+
+        [Test]
+        public void Should_Get_The_Correct_Results_For_MatrixL()
+        {
+            Assert.AreEqual(1d, MatrixL.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(-0.61905d, MatrixL.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(0.42857d, MatrixL.GetDoubleFromMatrix(0, 2));
+
+            Assert.AreEqual(0d, MatrixL.GetDoubleFromMatrix(1, 0));
+            Assert.AreEqual(1d, MatrixL.GetDoubleFromMatrix(1, 1));
+            Assert.AreEqual(-0.69237d, MatrixL.GetDoubleFromMatrix(1, 2));
+
+            Assert.AreEqual(0d, MatrixL.GetDoubleFromMatrix(2, 0));
+            Assert.AreEqual(0d, MatrixL.GetDoubleFromMatrix(2, 1));
+            Assert.AreEqual(1d, MatrixL.GetDoubleFromMatrix(2, 2));
+        }
+
+        [Test]
+        public void Should_Get_The_Correct_Results_For_Vectory()
+        {
+            Assert.AreEqual(6.5d, Vectory.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(-1.2762d, Vectory.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(-0.76930d, Vectory.GetDoubleFromMatrix(0, 2));
+        }
+
+        [Test]
+        public void Should_Get_The_Correct_Results_For_Vectorx()
+        {
+            Assert.AreEqual(5.1905d, Vectorx.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(1.0990d, Vectorx.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(1.0990d, Vectorx.GetDoubleFromMatrix(0, 2));
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 5;
+
             var arrayMatrix = new double[3, 3];
 
             arrayMatrix[0, 0] = 2.1d;
@@ -831,27 +888,121 @@ namespace Matrix_TestFixture
 
             RegularQuadraticMatrix = new Matrix(arrayMatrix);
 
-            arrayMatrix = new double[3,1];
+            arrayMatrix = new double[1, 3];
 
             arrayMatrix[0, 0] = 6.5d;
-            arrayMatrix[1, 0] = -5.3d;
-            arrayMatrix[2, 0] = 2.9d;
+            arrayMatrix[0, 1] = -5.3d;
+            arrayMatrix[0, 2] = 2.9d;
 
             ResultVector = new Matrix(arrayMatrix);
-
-            OutputMatrix = RegularQuadraticMatrix.LUPartition(ResultVector, true);
-
-            Assert.AreEqual(5.1905d, OutputMatrix.GetDoubleFromMatrix(0, 0));
-            Assert.AreEqual(1.0990d, OutputMatrix.GetDoubleFromMatrix(1, 0));
-            Assert.AreEqual(1.0990d, OutputMatrix.GetDoubleFromMatrix(2, 0));
-        }
-
-        public override void PrepareContext()
-        {
         }
 
         public override void CallMethodToTest()
         {
+            Dictionary<string, Matrix> matrices = RegularQuadraticMatrix.LUPartition(ResultVector, true);
+
+            MatrixL = matrices["L"];
+            MatrixU = matrices["U"];
+            Vectorx = matrices["x"];
+            Vectory = matrices["y"];
+        }
+    }
+
+    [TestFixture]
+    public class SolveUpperTriangularMatrix_MantissaLength5_TestFixture : Matrix_TestFixtureBase
+    {
+        protected Matrix ResultMatrix { get; set; }
+        protected Matrix ResultVector { get; set; }
+
+        [Test]
+        public void Should_Get_The_Correct_Results_For_Solving_Upper_Triangular_Matrix()
+        {
+            Assert.AreEqual(5.1905d, ResultVector.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(1.0990d, ResultVector.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(1.0990d, ResultVector.GetDoubleFromMatrix(0, 2));
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 5;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = 0d;
+            arrayMatrix[0, 2] = 0d;
+
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = 1563.9d;
+            arrayMatrix[1, 2] = 0d;
+
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = -1565.1d;
+            arrayMatrix[2, 2] = -0.7d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+
+            arrayMatrix = new double[1, 3];
+
+            arrayMatrix[0, 0] = 6.5d;
+            arrayMatrix[0, 1] = -1.2762d;
+            arrayMatrix[0, 2] = -0.76930d;
+
+            ResultMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            ResultVector = InputMatrix.SolveUpperTriangularMatrix(ResultMatrix);
+        }
+    }
+
+    [TestFixture]
+    public class SolveLowerTriangularMatrix_MantissaLength5_TestFixture : Matrix_TestFixtureBase
+    {
+        protected Matrix ResultMatrix { get; set; }
+        protected Matrix ResultVector { get; set; }
+
+        [Test]
+        public void Should_Get_The_Correct_Results_For_Solving_Lower_Triangular_Matrix()
+        {
+            Assert.AreEqual(6.5d, ResultVector.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(-1.2762d, ResultVector.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(-0.76930d, ResultVector.GetDoubleFromMatrix(0, 2));
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 5;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 1d;
+            arrayMatrix[0, 1] = -0.61905d;
+            arrayMatrix[0, 2] = 0.42857d;
+
+            arrayMatrix[1, 0] = 0d;
+            arrayMatrix[1, 1] = 1d;
+            arrayMatrix[1, 2] = -0.69237d;
+
+            arrayMatrix[2, 0] = 0d;
+            arrayMatrix[2, 1] = 0d;
+            arrayMatrix[2, 2] = 1d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+
+            arrayMatrix = new double[1, 3];
+
+            arrayMatrix[0, 0] = 6.5d;
+            arrayMatrix[0, 1] = -5.3d;
+            arrayMatrix[0, 2] = 2.9d;
+
+            ResultMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            ResultVector = InputMatrix.SolveLowerTriangularMatrix(ResultMatrix);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Numerics;
 using NUnit.Framework;
 using Numerik;
@@ -11,6 +12,8 @@ namespace Mantissen_TestFixture
         [TestFixtureSetUp]
         public void TestFixtureTearUp()
         {
+            Mantissen.Active = true;
+
             PrepareContext();
             CallMethodToTest();
         }
@@ -25,7 +28,7 @@ namespace Mantissen_TestFixture
     }
 
     [TestFixture]
-    public class RoundToMaxMantissaLength_Decimal_TestFixture
+    public class RoundToMaxMantissaLength_Decimal_TestFixture : Mantissen_TestFixtureBase
     {
         private decimal m_DigitInput;
         private decimal m_DigitOutput;
@@ -73,10 +76,18 @@ namespace Mantissen_TestFixture
 
             Assert.AreEqual(8019999999990.1111111111111111m, m_DigitOutput);
         }
+
+        public override void PrepareContext()
+        {
+        }
+
+        public override void CallMethodToTest()
+        {
+        }
     }
 
     [TestFixture]
-    public class GetExponentOfDecimal_Decimal_TestFixture
+    public class GetExponentOfDecimal_Decimal_TestFixture : Mantissen_TestFixtureBase
     {
         private decimal m_DigitInput;
         private decimal m_DigitOutput;
@@ -116,10 +127,18 @@ namespace Mantissen_TestFixture
 
             Assert.AreEqual(decimal.Zero, m_DigitOutput);
         }
+
+        public override void PrepareContext()
+        {
+        }
+
+        public override void CallMethodToTest()
+        {
+        }
     }
 
     [TestFixture]
-    public class RoundToMaxMantissaLength_Double_TestFixture
+    public class RoundToMaxMantissaLength_Double_TestFixture : Mantissen_TestFixtureBase
     {
         private double m_DigitInput;
         private double m_DigitOutput;
@@ -174,7 +193,7 @@ namespace Mantissen_TestFixture
             m_DigitInput = 801999999990.11111111111111111111111111119d;
             m_DigitOutput = Mantissen.RoundToMaxMantissaLength(28, m_DigitInput);
 
-            Assert.AreEqual(801999999990.1111111111111111d, m_DigitOutput);
+            Assert.AreEqual(801999999990.111d, m_DigitOutput);
         }
 
         [Test]
@@ -194,10 +213,45 @@ namespace Mantissen_TestFixture
 
             Assert.AreEqual(-1.111111111112E-40d, m_DigitOutput);
         }
+
+        [Test]
+        public void Exponent_Is_One_And_MantissaLength_Is_5()
+        {
+            m_DigitInput = 4.6d;
+            m_DigitOutput = Mantissen.RoundToMaxMantissaLength(5, m_DigitInput);
+
+            Assert.AreEqual(m_DigitInput, m_DigitOutput);
+        }
+
+        [Test]
+        public void Exponent_Is_MinusOne_And_MantissaLength_Is_5()
+        {
+            m_DigitInput = -4.6d;
+            m_DigitOutput = Mantissen.RoundToMaxMantissaLength(5, m_DigitInput);
+
+            Assert.AreEqual(m_DigitInput, m_DigitOutput);
+        }
+
+        [Test]
+        public void Exponent_Is_PlusFour_And_MantissaLength_Is_5()
+        {
+            m_DigitInput = 1555.0536d;
+            m_DigitOutput = Mantissen.RoundToMaxMantissaLength(5, m_DigitInput);
+
+            Assert.AreEqual("1555.1", m_DigitOutput.ToString(NumberFormatInfo.InvariantInfo));
+        }
+
+        public override void PrepareContext()
+        {
+        }
+
+        public override void CallMethodToTest()
+        {
+        }
     }
 
     [TestFixture]
-    public class GetExponentOfDecimal_Double_TestFixture
+    public class GetExponentOfDecimal_Double_TestFixture : Mantissen_TestFixtureBase
     {
         private double m_DigitInput;
         private double m_DigitOutput;
@@ -236,6 +290,14 @@ namespace Mantissen_TestFixture
             m_DigitOutput = Mantissen.GetExponentOfDecimal(m_DigitOutput);
 
             Assert.AreEqual(-31, m_DigitOutput);
+        }
+
+        public override void PrepareContext()
+        {
+        }
+
+        public override void CallMethodToTest()
+        {
         }
     }
 
