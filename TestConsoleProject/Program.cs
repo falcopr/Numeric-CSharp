@@ -12,36 +12,40 @@ namespace TestConsoleProject
             Console.WriteLine(0.000073489174176812342378426857575465465469m);
             Console.WriteLine(0.00000000000000000000000000000019m == decimal.Zero);
 
-            double[,] arrayMatix = new double[5,4];
-            arrayMatix[0, 0] = 1d;
-            arrayMatix[0, 1] = 2d;
-            arrayMatix[0, 2] = 3d;
-            arrayMatix[0, 3] = 3d;
+            var arrayMatrix = new double[3, 3];
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = -1.3d;
+            arrayMatrix[0, 2] = 0.9d;
 
-            arrayMatix[1, 0] = 4d;
-            arrayMatix[1, 1] = 5d;
-            arrayMatix[1, 2] = 6d;
-            arrayMatix[1, 3] = 3d;
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = 8.8d;
+            arrayMatrix[1, 2] = -6.2d;
 
-            arrayMatix[2, 0] = 7d;
-            arrayMatix[2, 1] = 8d;
-            arrayMatix[2, 2] = 9d;
-            arrayMatix[2, 3] = 3d;
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = -7.6d;
+            arrayMatrix[2, 2] = 4.6d;
 
-            arrayMatix[3, 0] = 7d;
-            arrayMatix[3, 1] = 8d;
-            arrayMatix[3, 2] = 9d;
-            arrayMatix[3, 3] = 3d;
+            var matrix1 = new Matrix(arrayMatrix);
 
-            arrayMatix[4, 0] = 7d;
-            arrayMatix[4, 1] = 8d;
-            arrayMatix[4, 2] = 9d;
-            arrayMatix[4, 3] = 3d;
+            arrayMatrix = new double[1,3];
 
-            Matrix matrix = new Matrix(arrayMatix);
-            Console.WriteLine(matrix.ToString());
+            arrayMatrix[0, 0] = 6.5d;
+            arrayMatrix[0, 1] = -5.3d;
+            arrayMatrix[0, 2] = 2.9d;
 
-            Console.WriteLine(Matrix.CreateIdentityMatrix(3));
+            var matrix2 = new Matrix(arrayMatrix);
+
+            Mantissen.Active = true;
+            Matrix.MantissaLength = 5;
+
+            var newMatrix = matrix1.LUPartition(matrix2, false);
+
+            Console.WriteLine(newMatrix["x"]);
+
+
+            newMatrix = matrix1.LUPartition(matrix2, true);
+
+            Console.WriteLine(newMatrix["x"]);
 
             Console.ReadLine();
         }

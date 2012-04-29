@@ -1005,4 +1005,149 @@ namespace Matrix_TestFixture
             ResultVector = InputMatrix.SolveLowerTriangularMatrix(ResultMatrix);
         }
     }
+
+    [TestFixture]
+    public class Transpose_Matrix_2x3_TestFixture : Matrix_TestFixtureBase
+    {
+        [Test]
+        public void TestTransponingTwoTimesInARow()
+        {
+            OutputMatrix = InputMatrix.Transponing();
+
+            Assert.AreEqual(3, OutputMatrix.MaxColumnCount);
+            Assert.AreEqual(2, OutputMatrix.MaxRowCount);
+
+            Assert.AreEqual(1d, OutputMatrix.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(3d, OutputMatrix.GetDoubleFromMatrix(1, 0));
+            Assert.AreEqual(5d, OutputMatrix.GetDoubleFromMatrix(2, 0));
+
+            Assert.AreEqual(2d, OutputMatrix.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(4d, OutputMatrix.GetDoubleFromMatrix(1, 1));
+            Assert.AreEqual(6d, OutputMatrix.GetDoubleFromMatrix(2, 1));
+
+            OutputMatrix = OutputMatrix.Transponing();
+
+            Assert.AreEqual(2, OutputMatrix.MaxColumnCount);
+            Assert.AreEqual(3, OutputMatrix.MaxRowCount);
+
+            Assert.AreEqual(1d, OutputMatrix.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(2d, OutputMatrix.GetDoubleFromMatrix(1, 0));
+
+            Assert.AreEqual(3d, OutputMatrix.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(4d, OutputMatrix.GetDoubleFromMatrix(1, 1));
+
+            Assert.AreEqual(5d, OutputMatrix.GetDoubleFromMatrix(0, 2));
+            Assert.AreEqual(6d, OutputMatrix.GetDoubleFromMatrix(1, 2));
+        }
+
+        public override void PrepareContext()
+        {
+            var arrayMatrix = new double[2,3];
+
+            arrayMatrix[0, 0] = 1d;
+            arrayMatrix[1, 0] = 2d;
+            arrayMatrix[0, 1] = 3d;
+            arrayMatrix[1, 1] = 4d;
+            arrayMatrix[0, 2] = 5d;
+            arrayMatrix[1, 2] = 6d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+        }
+    }
+
+    [TestFixture]
+    public class CreateLowerTriangularMatrix_WithoutPivotStrategy_TestFixture : Matrix_TestFixtureBase
+    {
+        [Test]
+        public void Should_Create_Lower_Triangular_Matrix_Correctly()
+        {
+            Assert.AreEqual(2.1d, OutputMatrix.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(0d, OutputMatrix.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(0d, OutputMatrix.GetDoubleFromMatrix(0, 2));
+
+            Assert.AreEqual(2512d, OutputMatrix.GetDoubleFromMatrix(1, 0));
+            Assert.AreEqual(1563.9d, OutputMatrix.GetDoubleFromMatrix(1, 1));
+            Assert.AreEqual(0d, OutputMatrix.GetDoubleFromMatrix(1, 2));
+
+            Assert.AreEqual(-2516d, OutputMatrix.GetDoubleFromMatrix(2, 0));
+            Assert.AreEqual(-1565.1d, OutputMatrix.GetDoubleFromMatrix(2, 1));
+            Assert.AreEqual(-0.7d, OutputMatrix.GetDoubleFromMatrix(2, 2));
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 5;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = 0d;
+            arrayMatrix[0, 2] = 0.9d;
+
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = 1563.9d;
+            arrayMatrix[1, 2] = -6.2d;
+
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = -1565.1d;
+            arrayMatrix[2, 2] = 4.6d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            OutputMatrix = InputMatrix.CreateLowerTriangularMatrix(false);
+        }
+    }
+
+    [TestFixture]
+    public class CreateLowerTriangularMatrix_WithPivotStrategy_TestFixture : Matrix_TestFixtureBase
+    {
+        [Test]
+        public void Should_Create_Lower_Triangular_Matrix_Correctly()
+        {
+            Assert.AreEqual(2.1d, OutputMatrix.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(0d, OutputMatrix.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(0d, OutputMatrix.GetDoubleFromMatrix(0, 2));
+
+            Assert.AreEqual(2512d, OutputMatrix.GetDoubleFromMatrix(1, 0));
+            Assert.AreEqual(1563.9d, OutputMatrix.GetDoubleFromMatrix(1, 1));
+            Assert.AreEqual(0d, OutputMatrix.GetDoubleFromMatrix(1, 2));
+
+            Assert.AreEqual(-2516d, OutputMatrix.GetDoubleFromMatrix(2, 0));
+            Assert.AreEqual(-1565.1d, OutputMatrix.GetDoubleFromMatrix(2, 1));
+            Assert.AreEqual(-0.7d, OutputMatrix.GetDoubleFromMatrix(2, 2));
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 5;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = 0.9d;
+            arrayMatrix[0, 2] = 0d;
+
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = -6.2d;
+            arrayMatrix[1, 2] = 1563.9d;
+
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = 4.6d;
+            arrayMatrix[2, 2] = -1565.1d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            OutputMatrix = InputMatrix.CreateLowerTriangularMatrix(true);
+        }
+    }
 }

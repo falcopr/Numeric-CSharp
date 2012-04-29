@@ -247,11 +247,14 @@ namespace Numerik
         //b = Ergebnisvektor
         //x = Wird duch die LU-Zerteilung zurückgegeben Ly = b; Ux = y
         //U = Dreicksmatrix
-        //KeyValuePair 0 --> L, 1 --> U, 2--> y, 3 --> x
+        //KeyValuePair "L" --> L, "U" --> U, "y" --> y, "x" --> x
+        //resultVector 
         public Dictionary<string, Matrix> LUPartition(
-            Matrix resultVector,
+            Matrix resultVectorAsB,
             bool useRowPivotStrategy)
         {
+            Matrix resultVector = resultVectorAsB.CloneMatrix();
+
             if (!resultVector.IsAVector())
             {
                 throw new Exception("Der Ergebnisvektor hat nicht die Dimensionen eines Vektors!");
@@ -288,6 +291,12 @@ namespace Numerik
                     double valueOfFirstCellInRow = Mantissen.RoundToMaxMantissaLength(MantissaLength, tempMatrix.GetDoubleFromMatrix(column, column));
                     double valueOfSecondCellInRow = Mantissen.RoundToMaxMantissaLength(MantissaLength, tempMatrix.GetDoubleFromMatrix(column, row));
 
+                    //Lässt Nullen genau, da bei großen Differenzen 34123e+30 und 0.000005 ein großer fehlerwert entstehen kann
+                    if (valueOfSecondCellInRow.EqualsZero(MantissaLength))
+                    {
+                        continue;
+                    }
+
                     double unknownValueToGetZero = Mantissen.RoundToMaxMantissaLength(MantissaLength, -(valueOfSecondCellInRow/valueOfFirstCellInRow));
 
                     firstRowOfMatrix = firstRowOfMatrix.MultiplyByScalar(unknownValueToGetZero);
@@ -297,6 +306,8 @@ namespace Numerik
                     double[] resultingRowAdding = firstRowOfMatrix.Add(secondRowOfMatrix).GetRowFromMatrixAsArray(0);
 
                     tempMatrix = tempMatrix.SetRowFromMatrix(resultingRowAdding, row);
+
+                    Console.WriteLine(tempMatrix);
                 }
             }
 
@@ -359,6 +370,63 @@ namespace Numerik
 
             Matrix resultMatrix = tempMatrix.SolveUpperTriangularMatrix(tempResultVector);
             return resultMatrix.TurningUpSideDown();
+        }
+
+        public Matrix CreateLowerTriangularMatrix(bool useRowPivotStrategy)
+        {
+            Matrix tempMatrix = CloneMatrix();
+
+            for (int column = 0; column < m_MaxColumnCount - 1; column++)
+            {
+                if (useRowPivotStrategy)
+                {
+                    tempMatrix = tempMatrix.RowPivotStrategy(column, m_MaxRowCount, column);
+                }
+
+                for (int row = column + 1; row < m_MaxRowCount; row++)
+                {
+                    Matrix firstRowOfMatrix = tempMatrix.GetRowFromMatrixAsMatrix(column);
+                    Matrix secondRowOfMatrix = tempMatrix.GetRowFromMatrixAsMatrix(row);
+
+                    double valueOfFirstCellInRow = Mantissen.RoundToMaxMantissaLength(MantissaLength, tempMatrix.GetDoubleFromMatrix(column, column));
+                    double valueOfSecondCellInRow = Mantissen.RoundToMaxMantissaLength(MantissaLength, tempMatrix.GetDoubleFromMatrix(column, row));
+
+                    //Lässt Nullen genau, da bei großen Differenzen 34123e+30 und 0.000005 ein großer fehlerwert entstehen kann
+                    if (valueOfSecondCellInRow.EqualsZero(MantissaLength))
+                    {
+                        continue;
+                    }
+
+                    double unknownValueToGetZero = Mantissen.RoundToMaxMantissaLength(MantissaLength, -(valueOfSecondCellInRow / valueOfFirstCellInRow));
+
+                    firstRowOfMatrix = firstRowOfMatrix.MultiplyByScalar(unknownValueToGetZero);
+
+                    double[] resultingRowAdding = firstRowOfMatrix.Add(secondRowOfMatrix).GetRowFromMatrixAsArray(0);
+
+                    tempMatrix = tempMatrix.SetRowFromMatrix(resultingRowAdding, row);
+                }
+            }
+
+            return tempMatrix;
+        }
+
+        public Matrix Transponing()
+        {
+            var transponedMatrix = new Matrix(m_MaxRowCount, m_MaxColumnCount);
+
+            for (int column = 0; column < m_MaxColumnCount; column++)
+            {
+                var collectedCellsOfRows = new double[m_MaxRowCount];
+
+                for (int row = 0; row < m_MaxRowCount; row++)
+                {
+                    collectedCellsOfRows[row] = GetDoubleFromMatrix(column, row);
+                }
+
+                transponedMatrix = transponedMatrix.SetRowFromMatrix(collectedCellsOfRows, column);
+            }
+
+            return transponedMatrix;
         }
 
         //public Matrix Transponierend
@@ -542,6 +610,25 @@ namespace Numerik
             return tempMatrix;
         }
 
+        private Matrix RowPivotStrategy(int minRow, int maxRow, int columnToLookAt)
+        {
+            double maxValue = GetDoubleFromMatrix(columnToLookAt, minRow);
+            int rowNumber = minRow;
+
+            for (int row = minRow; row < maxRow; row++)
+            {
+                double tempValue = Math.Abs(GetDoubleFromMatrix(columnToLookAt, row));
+
+                if (maxValue < tempValue)
+                {
+                    maxValue = tempValue;
+                    rowNumber = row;
+                }
+            }
+
+            return SwapRows(minRow, rowNumber);
+        }
+
         /* Wendet die Zeilenpivotstrategie innerhalb einer bestimmten Zeilengrenze an für eine bestimmte Spalte*/
         private Matrix RowPivotStrategy(Matrix resultVector, int minRow, int maxRow, int columnToLookAt)
         {
@@ -550,7 +637,7 @@ namespace Numerik
 
             for (int row = minRow; row < maxRow; row++)
             {
-                double tempValue = GetDoubleFromMatrix(columnToLookAt, row);
+                double tempValue = Math.Abs(GetDoubleFromMatrix(columnToLookAt, row));
                 
                 if (maxValue < tempValue)
                 {
@@ -568,8 +655,6 @@ namespace Numerik
 
             return SwapRows(minRow, rowNumber);
         }
-
-
 
         private void ValidateColumnAndRowNumber(int columnNumber, int rowNumber)
         {
