@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.InteropServices;
+using MathNetLAGen = MathNet.Numerics.LinearAlgebra.Generic;
+using MathNetLA = MathNet.Numerics.LinearAlgebra;
 
 namespace Numerik
 {
@@ -10,10 +11,20 @@ namespace Numerik
         // column, row ==> double value
         private Dictionary<Tuple<int, int>, double> m_Matrix;
 
-        private readonly int m_MaxColumnCount;
-        private readonly int m_MaxRowCount;
+        private int m_MaxColumnCount;
+        private int m_MaxRowCount;
 
         public static int MantissaLength = Mantissen.MaxDecimalPlaces;
+
+        public Matrix(Matrix newMatrixToSet)
+        {
+            var tempMatrix = new Matrix(newMatrixToSet.ToArray());
+
+            m_Matrix = tempMatrix.m_Matrix;
+
+            m_MaxColumnCount = tempMatrix.m_MaxColumnCount;
+            m_MaxRowCount = tempMatrix.m_MaxRowCount;
+        }
 
         /* create quadratic matrix */
         public Matrix(int dimension) : this(dimension, dimension)
@@ -92,6 +103,16 @@ namespace Numerik
             ValidateColumnAndRowNumber(column, row);
 
             m_Matrix[Tuple.Create(column, row)] = valueToSet;
+        }
+
+        public void SetFromNewMatrix(Matrix newMatrixToSet)
+        {
+            var tempMatrix = new Matrix(newMatrixToSet.ToArray());
+
+            m_Matrix = tempMatrix.m_Matrix;
+
+            m_MaxColumnCount = tempMatrix.m_MaxColumnCount;
+            m_MaxRowCount = tempMatrix.m_MaxRowCount;
         }
 
         public Matrix GetIdentityMatrix()
@@ -402,12 +423,38 @@ namespace Numerik
                     firstRowOfMatrix = firstRowOfMatrix.MultiplyByScalar(unknownValueToGetZero);
 
                     double[] resultingRowAdding = firstRowOfMatrix.Add(secondRowOfMatrix).GetRowFromMatrixAsArray(0);
+                    resultingRowAdding[column] = 0d;
 
                     tempMatrix = tempMatrix.SetRowFromMatrix(resultingRowAdding, row);
                 }
             }
 
             return tempMatrix;
+        }
+
+        public Matrix Inverse()
+        {
+            if (!IsMatrixQuadratic())
+            {
+                throw new Exception("Für eine Inverse Matrix muss diese quadratisch sein!");
+            }
+
+            //Math.net Library
+            MathNetLAGen.Matrix<double> netMatrix = new MathNetLA.Double.DenseMatrix(ToArray());
+            var inversedMatrix = new Matrix(netMatrix.Inverse().ToArray());
+            return inversedMatrix;
+        }
+
+        public double Determinant()
+        {
+            if (!IsMatrixQuadratic())
+            {
+                throw new Exception("Für die Berechnung der Determinante muss die Matrix quadratisch sein!");
+            }
+
+            //Math.net Library
+            MathNetLAGen.Matrix<double> netMatrix = new MathNetLA.Double.DenseMatrix(ToArray());
+            return netMatrix.Determinant();
         }
 
         public Matrix Transponing()
@@ -429,7 +476,53 @@ namespace Numerik
             return transponedMatrix;
         }
 
-        //public Matrix Transponierend
+        public int GetRankOfMatrix()
+        {
+            int dimensionOfMatrix = Math.Max(m_MaxColumnCount, m_MaxRowCount);
+            var resultMatrix = new Matrix(dimensionOfMatrix);
+            var tempCopy = CloneMatrix();
+
+            if (m_MaxColumnCount > m_MaxRowCount)
+            {
+                //rang(A) = rang(A-Transponierend)
+                tempCopy = tempCopy.Transponing();
+            }
+            if (m_MaxColumnCount != m_MaxRowCount)
+            {
+                for (int row = 0; row < tempCopy.m_MaxRowCount; row++)
+                {
+                    for (int column = 0; column < tempCopy.m_MaxColumnCount; column++)
+                    {
+                        resultMatrix.SetDoubleOfMatrix(tempCopy.GetDoubleFromMatrix(column, row), column, row);
+                    }
+                }
+            }
+            else
+            {
+                resultMatrix = tempCopy.CloneMatrix();
+            }
+
+            resultMatrix = resultMatrix.CreateLowerTriangularMatrix(true);
+
+            int rankOfMatrix = dimensionOfMatrix;
+
+            for (int row = 0; row < resultMatrix.m_MaxRowCount; row++)
+            {
+                bool hasRowJustZeros = true;
+
+                for (int column = 0; column < resultMatrix.m_MaxColumnCount; column++)
+                {
+                    hasRowJustZeros &= resultMatrix.GetDoubleFromMatrix(column, row).EqualsZero(MantissaLength);
+                }
+
+                if (hasRowJustZeros)
+                {
+                    rankOfMatrix--;
+                }
+            }
+
+            return rankOfMatrix;
+        }
 
         //public Matrix Normalize
 
@@ -500,6 +593,34 @@ namespace Numerik
         public object Clone()
         {
             return new Matrix(ToArray());
+        }
+
+        //Difference is Mantissa 14!!!
+        public override bool Equals(object obj)
+        {
+            if (!(obj is Matrix))
+            {
+                return false;
+            }
+
+            var objMatrix = obj as Matrix;
+
+            if (!HasMatrixSameRowsAndColumns(objMatrix))
+            {
+                return false;
+            }
+
+            bool cellComparision = true;
+
+            for (int column = 0; column < m_MaxColumnCount; column++)
+            {
+                for (int row = 0; row < m_MaxRowCount; row++)
+                {
+                    cellComparision &= (GetDoubleFromMatrix(column, row) - objMatrix.GetDoubleFromMatrix(column, row)).EqualsZero(14);
+                }
+            }
+
+            return cellComparision;
         }
 
         protected Matrix GetRowFromMatrixAsMatrix(int rowNumber)
@@ -647,11 +768,7 @@ namespace Numerik
             }
 
             //swapping rows of result vector
-            double firstCellOfVector = resultVector.GetDoubleFromMatrix(0, rowNumber);
-            double secondCellOfVector = resultVector.GetDoubleFromMatrix(0, minRow);
-
-            resultVector.SetDoubleOfMatrix(secondCellOfVector, 0, rowNumber);
-            resultVector.SetDoubleOfMatrix(firstCellOfVector, 0, minRow);
+            resultVector.SetFromNewMatrix(resultVector.SwapRows(minRow, rowNumber));
 
             return SwapRows(minRow, rowNumber);
         }

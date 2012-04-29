@@ -1150,4 +1150,187 @@ namespace Matrix_TestFixture
             OutputMatrix = InputMatrix.CreateLowerTriangularMatrix(true);
         }
     }
+
+    [TestFixture]
+    public class GetRankOfMatrix_TestFixture : Matrix_TestFixtureBase
+    {
+        protected double[,] ArrayMatrix { get; set; }
+
+        [Test]
+        public void Matrix_3x3_With_Rank_3()
+        {
+            ArrayMatrix = new double[3,3];
+
+            ArrayMatrix[0, 0] = 1d;
+            ArrayMatrix[0, 1] = 0d;
+            ArrayMatrix[0, 2] = 0d;
+
+            ArrayMatrix[1, 0] = 2d;
+            ArrayMatrix[1, 1] = 5d;
+            ArrayMatrix[1, 2] = 10d;
+
+            ArrayMatrix[2, 0] = 3d;
+            ArrayMatrix[2, 1] = 4d;
+            ArrayMatrix[2, 2] = 2d;
+
+            InputMatrix = new Matrix(ArrayMatrix);
+
+            Assert.AreEqual(3, InputMatrix.GetRankOfMatrix());
+        }
+
+        [Test]
+        public void Matrix_3x3_With_Rank_2()
+        {
+            ArrayMatrix = new double[3, 3];
+
+            ArrayMatrix[0, 0] = 1d;
+            ArrayMatrix[0, 1] = 0d;
+            ArrayMatrix[0, 2] = 0d;
+
+            ArrayMatrix[1, 0] = 2d;
+            ArrayMatrix[1, 1] = 6d;
+            ArrayMatrix[1, 2] = 3d;
+
+            ArrayMatrix[2, 0] = 3d;
+            ArrayMatrix[2, 1] = 4d;
+            ArrayMatrix[2, 2] = 2d;
+
+            InputMatrix = new Matrix(ArrayMatrix);
+
+            Assert.AreEqual(2, InputMatrix.GetRankOfMatrix());
+        }
+
+        [Test]
+        public void Matrix_2x3_With_Rank_2()
+        {
+            ArrayMatrix = new double[2, 3];
+
+            ArrayMatrix[0, 0] = 2d;
+            ArrayMatrix[0, 1] = 0d;
+            ArrayMatrix[0, 2] = 4d;
+
+            ArrayMatrix[1, 0] = 3d;
+            ArrayMatrix[1, 1] = 1d;
+            ArrayMatrix[1, 2] = -1d;
+
+            InputMatrix = new Matrix(ArrayMatrix);
+
+            Assert.AreEqual(2, InputMatrix.GetRankOfMatrix());
+        }
+
+        [Test]
+        public void Matrix_3x2_With_Rank_2()
+        {
+            ArrayMatrix = new double[3, 2];
+
+            ArrayMatrix[0, 0] = 2d;
+            ArrayMatrix[0, 1] = 3d;
+
+            ArrayMatrix[1, 0] = 0d;
+            ArrayMatrix[1, 1] = 1d;
+
+            ArrayMatrix[2, 0] = 4d;
+            ArrayMatrix[2, 1] = -1d;
+
+            InputMatrix = new Matrix(ArrayMatrix);
+
+            Assert.AreEqual(2, InputMatrix.GetRankOfMatrix());
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 5;
+        }
+
+        public override void CallMethodToTest()
+        {
+        }
+    }
+
+    [TestFixture]
+    public class Inverse_TestFixture : Matrix_TestFixtureBase
+    {
+        [Test]
+        [ExpectedException(ExpectedException = typeof(Exception), ExpectedMessage = "Für eine Inverse Matrix muss diese quadratisch sein!")]
+        public void Matrix_Is_Not_Quadratic()
+        {
+            new Matrix(3, 2).Inverse();
+        }
+
+        [Test]
+        public void Should_Get_Identity_When_A_Multiply_By_Its_Inverse()
+        {
+            Assert.AreEqual(InputMatrix.GetIdentityMatrix(), InputMatrix.Multiply(OutputMatrix));
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 14;
+            Mantissen.Active = true;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 3d;
+            arrayMatrix[0, 1] = 2d;
+            arrayMatrix[0, 2] = 1d;
+
+            arrayMatrix[1, 0] = 5d;
+            arrayMatrix[1, 1] = 4d;
+            arrayMatrix[1, 2] = 2d;
+
+            arrayMatrix[2, 0] = 1d;
+            arrayMatrix[2, 1] = 5d;
+            arrayMatrix[2, 2] = 2d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            OutputMatrix = InputMatrix.Inverse();
+        }
+    }
+
+    [TestFixture]
+    public class Determinant_TestFixture : Matrix_TestFixtureBase
+    {
+        [Test]
+        [ExpectedException(ExpectedException = typeof(Exception), ExpectedMessage = "Für die Berechnung der Determinante muss die Matrix quadratisch sein!")]
+        public void Matrix_Is_Not_Quadratic()
+        {
+            new Matrix(3, 2).Determinant();
+        }
+
+        [Test]
+        public void Should_Get_Correct_Determinant()
+        {
+            Assert.AreEqual(-65d, InputMatrix.Determinant());
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 14;
+            Mantissen.Active = true;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 1d;
+            arrayMatrix[0, 1] = -1d;
+            arrayMatrix[0, 2] = 4d;
+
+            arrayMatrix[1, 0] = 3d;
+            arrayMatrix[1, 1] = 2d;
+            arrayMatrix[1, 2] = 2d;
+
+            arrayMatrix[2, 0] = 5d;
+            arrayMatrix[2, 1] = 0d;
+            arrayMatrix[2, 2] = -3d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+        }
+    }
 }
