@@ -1333,4 +1333,342 @@ namespace Matrix_TestFixture
         {
         }
     }
+
+    [TestFixture]
+    public class RowSumNorm_TestFixture : Matrix_TestFixtureBase
+    {
+        protected double RowSumNormResult { get; set; }
+
+        [Test]
+        public void Should_Get_Correct_RowSumNormValue_Of_3x3_Matrix()
+        {
+            Assert.AreEqual(5030.1d, RowSumNormResult);
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 16;
+            Mantissen.Active = true;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = -1.3d;
+            arrayMatrix[0, 2] = 0.9d;
+
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = 8.8d;
+            arrayMatrix[1, 2] = -6.2d;
+
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = -7.6d;
+            arrayMatrix[2, 2] = 4.6d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            RowSumNormResult = InputMatrix.RowSumNorm();
+        }
+    }
+
+    [TestFixture]
+    public class MaximumNormOfAVector_TestFixture : Matrix_TestFixtureBase
+    {
+        protected double MaxNormOfAVectorResult { get; set; }
+
+        [Test]
+        [ExpectedException(ExpectedException = typeof(Exception), ExpectedMessage = "Für die Maximumnorm muss ein Vektor benutzt werden.!")]
+        public void MatrixInput_Is_Not_A_Vector()
+        {
+            new Matrix(3).MaxNormOfAVector();
+        }
+
+        [Test]
+        public void Should_Get_Correct_RowSumNormValue_Of_A_Matrix_With_1_Column_And_3_Rows()
+        {
+            Assert.AreEqual(2.5d, MaxNormOfAVectorResult);
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 16;
+            Mantissen.Active = true;
+
+            var arrayMatrix = new double[1, 3];
+
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = -2.5d;
+            arrayMatrix[0, 2] = 0.9d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            MaxNormOfAVectorResult = InputMatrix.MaxNormOfAVector();
+        }
+    }
+
+    [TestFixture]
+    public class ConditionNumberByRowSumNorm_TestFixture : Matrix_TestFixtureBase
+    {
+        protected double ConditionNumberByRowSumNormResult { get; set; }
+
+        [Test]
+        [ExpectedException(ExpectedException = typeof(Exception), ExpectedMessage = "Für die Konditionszahl durch Zeilensummennorm muss die Matrix quadratisch sein!")]
+        public void StartMatrix_Is_Not_Quadratic()
+        {
+            new Matrix(3, 2).ConditionNumberByRowSumNorm();
+        }
+
+        [Test]
+        public void Should_Get_Correct_ConditionNumberByRowSumNorm_Of_3x3_Matrix()
+        {
+            Assert.AreEqual(14136.1d.ToString(), ConditionNumberByRowSumNormResult.RoundMantissa(6).ToString());
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 6;
+            Mantissen.Active = true;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = -1.3d;
+            arrayMatrix[0, 2] = 0.9d;
+
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = 8.8d;
+            arrayMatrix[1, 2] = -6.2d;
+
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = -7.6d;
+            arrayMatrix[2, 2] = 4.6d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            ConditionNumberByRowSumNormResult = InputMatrix.ConditionNumberByRowSumNorm();
+        }
+    }
+
+    [TestFixture]
+    public class IsMatrixRegular_TestFixture : Matrix_TestFixtureBase
+    {
+        protected bool IsMatrixRegular { get; set; }
+
+        [Test]
+        public void Matrix_Should_Not_Be_Regular_Because_Is_Has_Not_The_Rank_nxn()
+        {
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = -1.3d;
+            arrayMatrix[0, 2] = 0d;
+
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = 8.8d;
+            arrayMatrix[1, 2] = 0d;
+
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = -7.6d;
+            arrayMatrix[2, 2] = 0d;
+
+            Assert.False(new Matrix(arrayMatrix).IsMatrixRegular());
+        }
+
+        [Test]
+        public void Matrix_Should_Be_Regular()
+        {
+            Assert.True(InputMatrix.IsMatrixRegular());
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 16;
+            Mantissen.Active = true;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = -1.3d;
+            arrayMatrix[0, 2] = 0.9d;
+
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = 8.8d;
+            arrayMatrix[1, 2] = -6.2d;
+
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = -7.6d;
+            arrayMatrix[2, 2] = 4.6d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            IsMatrixRegular = InputMatrix.IsMatrixRegular();
+        }
+    }
+
+    [TestFixture]
+    public class ResidualVector_TestFixture : Matrix_TestFixtureBase
+    {
+        protected Matrix ResidualVector { get; set; }
+        protected Matrix ResultVector { get; set; }
+
+        [Test]
+        public void ResidualVector_Should_Have_Correct_Values()
+        {
+            Assert.AreEqual(0.00405d.ToString(), ResidualVector.GetDoubleFromMatrix(0, 0).RoundMantissa(5).ToString());
+            Assert.AreEqual((-0.12885d).ToString(), ResidualVector.GetDoubleFromMatrix(0, 1).RoundMantissa(5).ToString());
+            Assert.AreEqual(0.01305d.ToString(), ResidualVector.GetDoubleFromMatrix(0, 2).RoundMantissa(5).ToString());
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 5;
+            Mantissen.Active = true;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = -1.3d;
+            arrayMatrix[0, 2] = 0.9d;
+
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = 8.8d;
+            arrayMatrix[1, 2] = -6.2d;
+
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = -7.6d;
+            arrayMatrix[2, 2] = 4.6d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+
+            arrayMatrix = new double[1, 3];
+
+            arrayMatrix[0, 0] = 6.5d;
+            arrayMatrix[0, 1] = -5.3d;
+            arrayMatrix[0, 2] = 2.9d;
+
+            ResultVector = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            ResidualVector = InputMatrix.ResidualVector(ResultVector);
+        }
+    }
+
+    [TestFixture]
+    public class ActualErrorWithRowSumNorm_TestFixture : Matrix_TestFixtureBase
+    {
+        protected double ActualErrorWithRowSumNorm { get; set; }
+        protected Matrix ResultVector { get; set; }
+
+        [Test]
+        public void Should_Get_Correct_ActualError()
+        {
+            Assert.AreEqual(0.0129d, ActualErrorWithRowSumNorm.RoundMantissa(3));
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 5;
+            Mantissen.Active = true;
+
+            var arrayMatrix = new double[2, 2];
+
+            arrayMatrix[0, 0] = 0.00035d;
+            arrayMatrix[0, 1] = 1.2547d;
+
+            arrayMatrix[1, 0] = 1.2654d;
+            arrayMatrix[1, 1] = 1.3182d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+
+            arrayMatrix = new double[1, 2];
+
+            arrayMatrix[0, 0] = 3.5267d;
+            arrayMatrix[0, 1] = 6.8541d;
+
+            ResultVector = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            ActualErrorWithRowSumNorm = InputMatrix.ActualErrorWithRowSumNorm(ResultVector, false);
+        }
+    }
+
+    [TestFixture]
+    public class NormalizeByRowSum_TestFixture : Matrix_TestFixtureBase
+    {
+        protected Matrix InputResultVector { get; set; }
+
+        [Test]
+        public void OutputMatrix_Should_Be_Normalized_Correctly()
+        {
+            Assert.AreEqual((0.000417487d).ToString(), OutputMatrix.GetDoubleFromMatrix(0, 0).ToString());
+            Assert.AreEqual((-0.0734463d).ToString(), OutputMatrix.GetDoubleFromMatrix(0, 1).ToString());
+            Assert.AreEqual(0.0769231d.ToString(), OutputMatrix.GetDoubleFromMatrix(0, 2).ToString());
+
+            Assert.AreEqual(0.499394d.ToString(), OutputMatrix.GetDoubleFromMatrix(1, 0).ToString());
+            Assert.AreEqual(0.497175d.ToString(), OutputMatrix.GetDoubleFromMatrix(1, 1).ToString());
+            Assert.AreEqual((-0.529915d).ToString(), OutputMatrix.GetDoubleFromMatrix(1, 2).ToString());
+
+            Assert.AreEqual((-0.500189d).ToString(), OutputMatrix.GetDoubleFromMatrix(2, 0).ToString());
+            Assert.AreEqual((-0.429379d).ToString(), OutputMatrix.GetDoubleFromMatrix(2, 1).ToString());
+            Assert.AreEqual(0.393162d.ToString(), OutputMatrix.GetDoubleFromMatrix(2, 2).ToString());
+        }
+
+        [Test]
+        public void ResultVector_Should_Be_Normalized_Correctly()
+        {
+            Assert.AreEqual(0.00129222d, InputResultVector.GetDoubleFromMatrix(0, 0));
+            Assert.AreEqual(-0.299435d, InputResultVector.GetDoubleFromMatrix(0, 1));
+            Assert.AreEqual(0.247863d, InputResultVector.GetDoubleFromMatrix(0, 2));
+        }
+
+        public override void PrepareContext()
+        {
+            Matrix.MantissaLength = 6;
+            Mantissen.Active = true;
+
+            var arrayMatrix = new double[3, 3];
+
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = -1.3d;
+            arrayMatrix[0, 2] = 0.9d;
+
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = 8.8d;
+            arrayMatrix[1, 2] = -6.2d;
+
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = -7.6d;
+            arrayMatrix[2, 2] = 4.6d;
+
+            InputMatrix = new Matrix(arrayMatrix);
+
+            arrayMatrix = new double[1, 3];
+
+            arrayMatrix[0, 0] = 6.5d;
+            arrayMatrix[0, 1] = -5.3d;
+            arrayMatrix[0, 2] = 2.9d;
+
+            InputResultVector = new Matrix(arrayMatrix);
+        }
+
+        public override void CallMethodToTest()
+        {
+            OutputMatrix = InputMatrix.NormalizeByRowSum(InputResultVector, 1);
+        }
+    }
 }

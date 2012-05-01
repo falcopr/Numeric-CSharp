@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DoubleExtension.cs" />
+    <Compile Include="LinearAlgebra.cs" />
     <Compile Include="Mantissen.cs" />
     <Compile Include="Matrix.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

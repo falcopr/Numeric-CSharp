@@ -42,10 +42,35 @@ namespace TestConsoleProject
 
             Console.WriteLine(newMatrix["x"]);
 
-
             newMatrix = matrix1.LUPartition(matrix2, true);
 
             Console.WriteLine(newMatrix["x"]);
+
+            int roundConstant = 8;
+
+            double a = 0.23371258e-4d;
+            double b = 0.33678429e+2d;
+            double c = -0.33677811e+2d;
+
+            double add1 = (a + (b + c).RoundMantissa(roundConstant)).RoundMantissa(roundConstant);
+            double add2 = ((a + b).RoundMantissa(roundConstant) + c).RoundMantissa(8);
+
+            Console.WriteLine(add1);
+            Console.WriteLine(add2);
+            Console.WriteLine(a+b+c);
+
+            arrayMatrix = new double[3, 3];
+            arrayMatrix[0, 0] = 2.1d;
+            arrayMatrix[0, 1] = -1.3d;
+            arrayMatrix[0, 2] = 0.9d;
+
+            arrayMatrix[1, 0] = 2512d;
+            arrayMatrix[1, 1] = 8.8d;
+            arrayMatrix[1, 2] = -6.2d;
+
+            arrayMatrix[2, 0] = -2516d;
+            arrayMatrix[2, 1] = -7.6d;
+            arrayMatrix[2, 2] = 4.6d;
 
             Console.ReadLine();
         }

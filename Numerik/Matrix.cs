@@ -16,14 +16,8 @@ namespace Numerik
 
         public static int MantissaLength = Mantissen.MaxDecimalPlaces;
 
-        public Matrix(Matrix newMatrixToSet)
+        public Matrix(Matrix newMatrixToSet) : this(newMatrixToSet.ToArray())
         {
-            var tempMatrix = new Matrix(newMatrixToSet.ToArray());
-
-            m_Matrix = tempMatrix.m_Matrix;
-
-            m_MaxColumnCount = tempMatrix.m_MaxColumnCount;
-            m_MaxRowCount = tempMatrix.m_MaxRowCount;
         }
 
         /* create quadratic matrix */
@@ -252,7 +246,7 @@ namespace Numerik
                         double rowCell = Mantissen.RoundToMaxMantissaLength(MantissaLength, matrixToMultiply.GetDoubleFromMatrix(column, columnAndRow));
                         double result = Mantissen.RoundToMaxMantissaLength(MantissaLength, columnCell*rowCell);
 
-                        valueToSet += result;
+                        valueToSet = (valueToSet + result).RoundMantissa(MantissaLength);
                     }
 
                     multipliedMatrix.SetDoubleOfMatrix(Mantissen.RoundToMaxMantissaLength(MantissaLength, valueToSet), column, row);
@@ -524,17 +518,124 @@ namespace Numerik
             return rankOfMatrix;
         }
 
-        //public Matrix Normalize
+        public bool IsMatrixRegular()
+        {
+            int maxRankPossible = Math.Max(m_MaxColumnCount, m_MaxRowCount);
 
-        //public Matrix Inverse
-        //public Matrix Determinante   --> Indikator für eine reguläre Matrix, wenn Inverse existiert Determinante != 0 und Rang = n
-        //public Matrix Rang
+            return maxRankPossible == GetRankOfMatrix() && GetIdentityMatrix().Equals(Multiply(Inverse()));
+        }
+
+        public double RowSumNorm()
+        {
+            double maxValue = 0d;
+
+            for (int row = 0; row < m_MaxRowCount; row++)
+            {
+                double tempValue = 0d;
+
+                for (int column = 0; column < m_MaxColumnCount; column++)
+                {
+                    tempValue = tempValue.RoundAdd(Math.Abs(GetDoubleFromMatrix(column, row)), MantissaLength);
+                }
+
+                if (maxValue < tempValue)
+                {
+                    maxValue = tempValue;
+                }
+            }
+
+            return maxValue;
+        }
+
+        public double MaxNormOfAVector()
+        {
+            if (!IsAVector())
+            {
+                throw new Exception("Für die Maximumnorm muss ein Vektor benutzt werden.!");
+            }
+
+            double maxValue = 0d;
+
+            for (int row = 0; row < m_MaxRowCount; row++)
+            {
+                double tempValue = 0d;
+
+                tempValue = tempValue.RoundAdd(Math.Abs(GetDoubleFromMatrix(0, row)), MantissaLength);
+
+                if (maxValue < tempValue)
+                {
+                    maxValue = tempValue;
+                }
+            }
+
+            return maxValue;
+        }
+
+        // = Kappa(Matrix)
+        public double ConditionNumberByRowSumNorm()
+        {
+            if (!IsMatrixQuadratic())
+            {
+                throw new Exception("Für die Konditionszahl durch Zeilensummennorm muss die Matrix quadratisch sein!");
+            }
+
+            return RowSumNorm()*Inverse().RowSumNorm().RoundMantissa(MantissaLength);
+        }
+
+        public Matrix ResidualVector(Matrix resultVector)
+        {
+            Matrix x = LUPartition(resultVector, true)["x"];
+
+            Mantissen.Active = false;
+
+            Matrix residualVector = Multiply(x).Subtract(resultVector);
+
+            Mantissen.Active = true;
+
+            return residualVector;
+        }
+
+        /* Es werden von jeder Zeiler der Matrix das absolute summiert und von jeder Zelle in */
+        /* der Zeile abgezogen! Der Ergebnisvektor wird dabei nicht mit summiert.*/
+        /* r = Ax - b*/
+        public Matrix NormalizeByRowSum(Matrix resultVector, double valueForEachSumOfRow)
+        {
+            var tempMatrix = new Matrix(m_MaxColumnCount);
+
+            for (int row = 0; row < m_MaxRowCount; row++)
+            {
+                double tempValue = GetAbsSumOfARow(row);
+
+                for (int column = 0; column < m_MaxColumnCount; column++)
+                {
+                    tempMatrix.SetDoubleOfMatrix(GetDoubleFromMatrix(column, row).RoundDivide(tempValue, MantissaLength), column, row);
+                }
+
+                resultVector.SetDoubleOfMatrix(resultVector.GetDoubleFromMatrix(0, row).RoundDivide(tempValue, MantissaLength), 0, row);
+            }
+
+            return tempMatrix;
+        }
+
+        /* ||deltax|| / ||x|| = error x wird durch LU-Partition berechnet*/
+        public double ActualErrorWithRowSumNorm(Matrix resultVector, bool useRowPivotStrategy)
+        {
+            Matrix x_approx = LUPartition(resultVector, useRowPivotStrategy)["x"];
+
+            Mantissen.Active = false;
+
+            Matrix x_exact = LUPartition(resultVector, true)["x"];
+
+            Mantissen.Active = true;
+
+            x_exact = x_exact.RoundCurrentMatrixToMantissaLength();
+
+            Matrix deltax = x_exact.Subtract(x_approx);
+
+            return deltax.MaxNormOfAVector().RoundDivide(x_exact.MaxNormOfAVector(), MantissaLength);
+        }
 
         //Spektralnorm
-        //Zeilensummennorm
-        //Maximumnorm
-        
-        //public int Mantisse (für Rundungen)
 
         public bool HasMatrixSameRowsAndColumns(Matrix matrixToCompare)
         {
@@ -595,7 +696,7 @@ namespace Numerik
             return new Matrix(ToArray());
         }
 
-        //Difference is Mantissa 14!!!
+        //Difference is Mantissa 10!!!
         public override bool Equals(object obj)
         {
             if (!(obj is Matrix))
@@ -616,7 +717,7 @@ namespace Numerik
             {
                 for (int row = 0; row < m_MaxRowCount; row++)
                 {
-                    cellComparision &= (GetDoubleFromMatrix(column, row) - objMatrix.GetDoubleFromMatrix(column, row)).EqualsZero(14);
+                    cellComparision &= (GetDoubleFromMatrix(column, row) - objMatrix.GetDoubleFromMatrix(column, row)).EqualsZero(10);
                 }
             }
 
@@ -771,6 +872,33 @@ namespace Numerik
             resultVector.SetFromNewMatrix(resultVector.SwapRows(minRow, rowNumber));
 
             return SwapRows(minRow, rowNumber);
+        }
+
+        private Matrix RoundCurrentMatrixToMantissaLength()
+        {
+            Matrix tempMatrix = CloneMatrix();
+
+            for (int row = 0; row < m_MaxRowCount; row++)
+            {
+                for (int column = 0; column < m_MaxColumnCount; column++)
+                {
+                    tempMatrix.SetDoubleOfMatrix(GetDoubleFromMatrix(column, row).RoundMantissa(MantissaLength), row, column);
+                }
+            }
+
+            return tempMatrix;
+        }
+
+        private double GetAbsSumOfARow(int row)
+        {
+            double tempValue = 0d;
+
+            for (int column = 0; column < m_MaxColumnCount; column++)
+            {
+                tempValue = tempValue.RoundAdd(Math.Abs(GetDoubleFromMatrix(column, row)), MantissaLength);
+            }
+
+            return tempValue;
         }
 
         private void ValidateColumnAndRowNumber(int columnNumber, int rowNumber)
